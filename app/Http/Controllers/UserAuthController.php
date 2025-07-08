@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CreateUserRequest;
+use App\Http\Requests\LoginRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
@@ -11,14 +13,11 @@ class UserAuthController extends Controller
 {
 
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email'    => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
+        
 
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->validated();
 
         if (!Auth::attempt($credentials)) {
             return response()->json([
@@ -37,14 +36,9 @@ class UserAuthController extends Controller
     }
 
 
-    public function createUser(Request $request)
-    {
-        $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:6'
-        ]);
-
+public function createUser(CreateUserRequest $request)
+{
+    try {
         $user = User::create([
             'name'     => $request->name,
             'email'    => $request->email,
@@ -56,5 +50,12 @@ class UserAuthController extends Controller
             'message' => 'User created successfully',
             'token'   => $user->createToken('API Token')->plainTextToken
         ], 201);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => false,
+            'message' => 'Error creating user',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 }
